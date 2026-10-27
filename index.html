@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<!-- ============================================================
+     prod_anomalies.html — État Production · Points d'attention (Maison Cadiou)
+     Fichier autonome : aucune bibliothèque externe, aucune
+     interaction (adapté à un widget intégré / embedded).
+     TOUTES LES DONNÉES SONT DANS LE BLOC « DONNÉES DE DÉMONSTRATION »
+     en bas, dans le <script>.
+     ============================================================ -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Production · Points d'attention</title>
+<style>
+  :root {
+    --accent: #0f6e56; --page-bg: #edf7f3; --badge-bg: #e1f5ee;
+    --card-bg: #ffffff; --card-border: rgba(0,0,0,0.12);
+    --text-primary: #1a1a18; --text-muted: #6b6b66;
+    --ok: #2e6b30; --ok-bg: #e6f4e7; --warn: #854f0b; --warn-bg: #faeeda; --ko: #a32d2d; --ko-bg: #fcebeb;
+    --gap: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+         background: var(--page-bg); color: var(--text-primary); font-size: 14px; line-height: 1.5; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 1.25rem 1.5rem 1.5rem; }
+  .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .head-title { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; }
+  .head-title::before { content: ""; width: 4px; height: 22px; background: var(--accent); }
+  .head-title span { font-weight: 400; color: var(--text-muted); }
+  .badge { background: var(--badge-bg); color: var(--accent); font-size: 11px; font-weight: 500; padding: 3px 8px; white-space: nowrap; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: var(--gap); margin-bottom: var(--gap); }
+  .kpi { background: var(--card-bg); border: 0.5px solid var(--card-border); padding: 1rem 1.1rem; }
+  .kpi.st { border-left: 4px solid var(--c); }
+  .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: .04em; text-transform: uppercase; min-height: 34px; }
+  .kpi-value { font-size: 27px; font-weight: 500; line-height: 1.1; color: var(--accent); margin-top: 4px; }
+  .kpi-detail { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .gauge { position: relative; height: 6px; background: #eeeeee; margin-top: 9px; }
+  .gauge div { height: 100%; }
+  .gauge i { position: absolute; top: -3px; width: 2px; height: 12px; background: #1a1a18; }
+  .up { color: var(--ok); font-weight: 600; } .down { color: var(--ko); font-weight: 600; }
+  .card { background: var(--card-bg); border: 0.5px solid var(--card-border); padding: 1rem 1.15rem; min-width: 0; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card-title { font-size: 15px; font-weight: 500; }
+  .card-sub { font-size: 12px; color: var(--text-muted); margin-bottom: .6rem; }
+  .card-foot { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
+  .row3 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.05fr) minmax(0,1.3fr); gap: var(--gap); margin-top: var(--gap); }
+  .rowB { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr); gap: var(--gap); }
+  .colB { display: grid; gap: var(--gap); align-content: start; }
+  svg text { font-family: inherit; }
+  .donut-wrap { display: flex; align-items: center; gap: .8rem; }
+  .donut-wrap svg { width: 92px; height: 92px; flex-shrink: 0; }
+  .legend { flex: 1; min-width: 0; }
+  .lg { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 0.5px solid rgba(0,0,0,.07); font-size: 12.5px; }
+  .lg:last-child { border-bottom: none; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+  .lg-name { flex: 1; line-height: 1.25; }
+  .lg-pct { font-weight: 600; min-width: 38px; text-align: right; }
+  .hb { display: grid; grid-template-columns: 128px 1fr auto; align-items: center; gap: 8px; font-size: 12.5px; padding: 4px 0; }
+  .hb-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hb-track { position: relative; height: 10px; background: #f0f0f0; }
+  .hb-fill { height: 100%; }
+  .hb-track i { position: absolute; top: -3px; width: 2px; height: 16px; background: #1a1a18; }
+  .hb-val { text-align: right; font-weight: 600; white-space: nowrap; min-width: 54px; }
+  .hb-val small { font-weight: 400; color: var(--text-muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+  th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em; padding: 0 4px 6px; border-bottom: 0.5px solid var(--card-border); }
+  td { padding: 6px 4px; border-bottom: 0.5px solid rgba(0,0,0,.06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  td.r, th.r { text-align: right; }
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 1px 7px; }
+  .trs { display: grid; grid-template-columns: 150px 1fr 48px; align-items: center; gap: 10px; padding: 9px 0 3px; font-size: 13px; }
+  .trs-sub { font-size: 11.5px; color: var(--text-muted); padding-left: 160px; padding-bottom: 7px; border-bottom: 0.5px solid rgba(0,0,0,.06); }
+  .trs-val { font-weight: 700; text-align: right; }
+  .legend-obj { font-size: 11.5px; color: var(--text-muted); display: flex; gap: 14px; margin-bottom: 4px; }
+  .legend-obj b { display: inline-block; width: 12px; height: 0; border-top: 2px dashed #a32d2d; vertical-align: middle; margin-right: 4px; }
+  @media (max-width: 1000px) {
+    .kpi-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .row3, .rowB { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="head-title">Production <span>· Points d'attention</span></div>
+    <span class="badge" id="periode"></span>
+  </div>
+  <div class="kpi-grid" id="kpis"></div>
+  <div class="rowB"><div class="card"><div class="card-head"><div><div class="card-title" id="liste-t"></div><div class="card-sub" id="liste-s"></div></div><span class="badge" id="liste-b" style="display:none"></span></div><div id="liste"></div></div><div class="colB"><div class="card"><div class="card-head"><div><div class="card-title" id="haut-t"></div><div class="card-sub" id="haut-s"></div></div><span class="badge" id="haut-b" style="display:none"></span></div><div id="haut"></div></div><div class="card"><div class="card-head"><div><div class="card-title" id="bas-t"></div><div class="card-sub" id="bas-s"></div></div><span class="badge" id="bas-b" style="display:none"></span></div><div id="bas"></div></div></div></div>
+</div>
+<script>
+/* ================================================================
+   ═══════════════ DONNÉES DE DÉMONSTRATION ═══════════════════════
+   ================================================================
+   Modifiez ces valeurs avant chaque démonstration.
+   Pas de dates : P1 à P12 = 12 périodes glissantes, P12 = période en cours.
+   TRS machines : Scie double tête 1 74 %, Scie double tête 2 67 %, Découpe laser 75 %, Poinçonneuse 71 %
+   ================================================================ */
+
+const PERIODE = "Période en cours · P12";
+
+/* ---- INDICATEURS (5) ----------------------------------------------
+   label, valeur (texte affiché), detail (texte sous la valeur)
+   evol    → évolution en % vs N-1 (nombre) ou null
+   statut  → "ok" (vert) | "warn" (orange) | "ko" (rouge) | absent
+   jauge   → { valeur, objectif, max } pour une barre avec repère d'objectif
+------------------------------------------------------------------- */
+const KPI_DATA = [
+  {
+    "label": "TRS des machines",
+    "valeur": "72 %",
+    "detail": "Objectif 75 %",
+    "statut": "warn",
+    "jauge": {
+      "valeur": 72,
+      "objectif": 75,
+      "max": 100
+    }
+  },
+  {
+    "label": "OF en retard",
+    "valeur": "38",
+    "detail": "sur 610 OF en cours",
+    "statut": "ko"
+  },
+  {
+    "label": "OF bloqués",
+    "valeur": "14",
+    "detail": "manque de composant",
+    "statut": "warn"
+  },
+  {
+    "label": "Écart temps réel / prévu",
+    "valeur": "+4,7 %",
+    "detail": "MONTAGE et EMBAL",
+    "statut": "warn"
+  },
+  {
+    "label": "Arrêts non planifiés",
+    "valeur": "126 h",
+    "detail": "sur la période",
+    "statut": "ko"
+  }
+];
+
+/* ---- PANNEAUX ------------------------------------------------------
+   type : "barres" | "anneau" | "barresH" | "tableau" | "trs"
+   objectif + sens ("haut" = plus c'est haut mieux c'est, "bas" = l'inverse)
+   + tolerance (écart toléré avant le rouge) colorent les valeurs.
+------------------------------------------------------------------- */
+const PANNEAUX = {
+  "liste": {
+    "type": "trs",
+    "titre": "TRS par machine (centre DEBIT)",
+    "sousTitre": "Période en cours",
+    "lignes": [
+      {
+        "nom": "Scie double tête 1",
+        "d": 88,
+        "p": 89,
+        "q": 95
+      },
+      {
+        "nom": "Scie double tête 2",
+        "d": 82,
+        "p": 85,
+        "q": 96
+      },
+      {
+        "nom": "Découpe laser",
+        "d": 90,
+        "p": 86,
+        "q": 97
+      },
+      {
+        "nom": "Montage",
+        "d": 85,
+        "p": 87,
+        "q": 96
+      }
+    ],
+    "objectif": 75,
+    "sens": "haut",
+    "tolerance": 5,
+    "note": "MONTAGE et EMBAL, centres manuels, sont suivis en écart de temps."
+  },
+  "haut": {
+    "type": "barres",
+    "titre": "TRS par période",
+    "sousTitre": "Moyenne des machines, en %",
+    "labels": [
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "P5",
+      "P6",
+      "P7",
+      "P8",
+      "P9",
+      "P10",
+      "P11",
+      "P12"
+    ],
+    "series": [
+      {
+        "nom": "TRS",
+        "valeurs": [
+          68,
+          69,
+          71,
+          70,
+          66,
+          67,
+          70,
+          72,
+          73,
+          71,
+          73,
+          72
+        ]
+      }
+    ],
+    "unite": " %",
+    "min": 50,
+    "max": 90,
+    "objectif": 75,
+    "sens": "haut",
+    "tolerance": 5,
+    "largeur": 600,
+    "hauteur": 210
+  },
+  "bas": {
+    "type": "barresH",
+    "titre": "Causes d'arrêt",
+    "sousTitre": "Heures perdues sur la période",
+    "items": [
+      {
+        "nom": "Panne",
+        "valeur": 46
+      },
+      {
+        "nom": "Changement de série",
+        "valeur": 35
+      },
+      {
+        "nom": "Attente matière",
+        "valeur": 28
+      },
+      {
+        "nom": "Manque opérateur",
+        "valeur": 17
+      }
+    ],
+    "unite": " h",
+    "part": true
+  }
+};
+
+/* ---- COULEURS DU SERVICE (optionnel) ------------------------------ */
+const RAMP = ["#04342c", "#085041", "#0f6e56", "#1d9e75", "#5dcaa5", "#b4b2a9"];
+const COUL = { N: "#0f6e56", N1: "#9fe1cb" };
+
+
+/* ================================================================
+   ═══════════════ MOTEUR (aucune bibliothèque, statique) ═════════
+   Ne pas modifier sauf besoin : tout se règle dans les données.
+   ================================================================ */
+const ST  = { ok: "#2e6b30", warn: "#854f0b", ko: "#a32d2d" };          /* texte */
+const STF = { ok: "#639922", warn: "#ef9f27", ko: "#e24b4a" };          /* barres */
+const STB = { ok: "#e6f4e7", warn: "#faeeda", ko: "#fcebeb" };          /* fonds */
+const fmt = n => Number(n).toLocaleString("fr-FR");
+const pctFmt = n => (n > 0 ? "+" : "") + String(n).replace(".", ",") + " %";
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const $ = id => document.getElementById(id);
+function niceMax(v) {
+  const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p;
+  return ([1, 1.2, 1.6, 2, 2.4, 3, 4, 5, 6, 8, 10].find(c => m <= c)) * p;
+}
+/* statut d'une valeur face à un objectif : sens "haut" = plus c'est haut mieux c'est */
+function statut(v, o) {
+  if (o.objectif == null) return null;
+  const t = o.tolerance == null ? 5 : o.tolerance;
+  if (o.sens === "bas") return v <= o.objectif ? "ok" : v <= o.objectif + t ? "warn" : "ko";
+  return v >= o.objectif ? "ok" : v >= o.objectif - t ? "warn" : "ko";
+}
+
+/* --- Barres verticales (une ou deux séries, objectif facultatif) --- */
+function barres(el, o) {
+  const W = o.largeur || 1000, H = o.hauteur || 230, L = 56, R = 10, T = 26, B = 24;
+  const vals = o.series.flatMap(s => s.valeurs).concat(o.objectif != null ? [o.objectif] : []);
+  const min = o.min || 0, max = o.max || niceMax(Math.max(...vals));
+  const iw = W - L - R, ih = H - T - B, gw = iw / o.labels.length, n = o.series.length;
+  const bw = Math.min(n > 1 ? 26 : 34, (gw * 0.72) / n);
+  const y = v => T + ih - ((Math.max(v, min) - min) / (max - min)) * ih;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(o.titre)}">`;
+  for (let i = 0; i <= 4; i++) {
+    const v = min + ((max - min) * i) / 4, yy = y(v);
+    s += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="#0000000f"/>`;
+    s += `<text x="${L - 8}" y="${yy + 4}" font-size="11" fill="#6b6b66" text-anchor="end">${fmt(Math.round(v * 10) / 10)}${o.unite || ""}</text>`;
+  }
+  o.labels.forEach((lab, i) => {
+    const gx = L + gw * i + (gw - bw * n - 4 * (n - 1)) / 2;
+    o.series.forEach((se, j) => {
+      const v = se.valeurs[i], st = n === 1 ? statut(v, o) : null;
+      const col = st ? STF[st] : (se.couleur || COUL.N);
+      s += `<rect x="${gx + j * (bw + 4)}" y="${y(v)}" width="${bw}" height="${y(min) - y(v)}" fill="${col}"/>`;
+      if (o.valeursAffichees) s += `<text x="${gx + j * (bw + 4) + bw / 2}" y="${y(v) - 5}" font-size="11" fill="#1a1a18" text-anchor="middle">${String(v).replace(".", ",")}</text>`;
+    });
+    s += `<text x="${L + gw * i + gw / 2}" y="${H - 6}" font-size="11.5" fill="#6b6b66" text-anchor="middle">${esc(lab)}</text>`;
+  });
+  if (o.objectif != null) {
+    s += `<line x1="${L}" x2="${W - R}" y1="${y(o.objectif)}" y2="${y(o.objectif)}" stroke="#a32d2d" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+  }
+  if (n > 1) {
+    let lx = W - R;
+    [...o.series].reverse().forEach(se => { lx -= 70;
+      s += `<rect x="${lx}" y="4" width="11" height="11" fill="${se.couleur}"/><text x="${lx + 16}" y="14" font-size="12" fill="#1a1a18">${esc(se.nom)}</text>`; });
+  }
+  el.innerHTML = (o.objectif != null ? `<div class="legend-obj"><span><b></b>Objectif ${String(o.objectif).replace(".", ",")}${o.unite || ""}</span><span><span class="dot" style="background:${STF.ok}"></span> atteint</span><span><span class="dot" style="background:${STF.warn}"></span> proche</span><span><span class="dot" style="background:${STF.ko}"></span> loin</span></div>` : "") + s + "</svg>";
+}
+
+/* --- Anneau + légende --- */
+function anneau(el, o) {
+  const r = 48, c = 2 * Math.PI * r, tot = o.items.reduce((a, b) => a + b.pct, 0);
+  let off = 0, s = `<svg viewBox="0 0 120 120" role="img" aria-label="${esc(o.titre)}">`;
+  o.items.forEach((it, i) => {
+    const len = (it.pct / tot) * c;
+    s += `<circle cx="60" cy="60" r="${r}" fill="none" stroke="${RAMP[i % RAMP.length]}" stroke-width="20" stroke-dasharray="${len} ${c - len}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"/>`;
+    off += len;
+  });
+  const lg = o.items.map((it, i) => `<div class="lg"><span class="dot" style="background:${RAMP[i % RAMP.length]}"></span><span class="lg-name">${esc(it.nom)}</span><span class="lg-pct" style="color:${RAMP[Math.min(i, 2)]}">${it.pct} %</span></div>`).join("");
+  el.innerHTML = `<div class="donut-wrap">${s}</svg><div class="legend">${lg}</div></div>`;
+}
+
+/* --- Barres horizontales (part, objectif ou statut facultatifs) --- */
+function barresH(el, o) {
+  const tot = o.items.reduce((a, b) => a + b.valeur, 0);
+  const max = o.max || Math.max(...o.items.map(i => i.valeur).concat(o.objectif != null ? [o.objectif] : [])) * 1.05;
+  el.innerHTML = o.items.map((it, i) => {
+    const st = it.statut || statut(it.valeur, o);
+    const col = st ? STF[st] : RAMP[Math.min(i + 1, 3)];
+    const mark = o.objectif != null ? `<i style="left:${(o.objectif / max) * 100}%"></i>` : "";
+    const part = o.part ? ` <small>${Math.round((it.valeur / tot) * 100)} %</small>` : "";
+    return `<div class="hb"><span class="hb-name">${esc(it.nom)}</span><div class="hb-track"><div class="hb-fill" style="width:${(it.valeur / max) * 100}%;background:${col}"></div>${mark}</div><span class="hb-val" style="${st ? "color:" + ST[st] : ""}">${fmt(it.valeur)}${o.unite || ""}${part}</span></div>`;
+  }).join("") + (o.objectif != null ? `<div class="card-foot">Repère noir = objectif ${fmt(o.objectif)}${o.unite || ""}</div>` : "");
+}
+
+/* --- Tableau (colonne "pastille" = valeur sur fond de couleur du statut de la ligne) --- */
+function tableau(el, o) {
+  const cols = `<colgroup>${o.colonnes.map(c => `<col${c.largeur ? ` style="width:${c.largeur}px"` : ""}>`).join("")}</colgroup>`;
+  const th = `<tr>${o.colonnes.map(c => `<th class="${c.align || ""}">${esc(c.titre)}</th>`).join("")}</tr>`;
+  const rows = o.lignes.map(l => `<tr>${o.colonnes.map(c => {
+    let v = l[c.cle]; v = typeof v === "number" ? fmt(v) : esc(v == null ? "" : v);
+    if (c.pastille && l.statut) v = `<span class="pill" style="background:${STB[l.statut]};color:${ST[l.statut]}">${v}</span>`;
+    if (c.gras) v = `<b>${v}</b>`;
+    if (c.evol) v = `<span class="${l[c.cle] < 0 ? "down" : "up"}">${pctFmt(l[c.cle])}</span>`;
+    return `<td class="${c.align || ""}" ${c.muet ? 'style="color:#6b6b66"' : ""}>${v}</td>`;
+  }).join("")}</tr>`).join("");
+  el.innerHTML = `<table>${cols}${th}${rows}</table>` + (o.pied ? `<div class="card-foot">${esc(o.pied)}</div>` : "");
+}
+
+/* --- TRS par machine : TRS = Disponibilité × Performance × Qualité --- */
+function trs(el, o) {
+  el.innerHTML = o.lignes.map(l => {
+    const v = Math.round((l.d * l.p * l.q) / 10000), st = statut(v, o);
+    return `<div class="trs"><span>${esc(l.nom)}</span><div class="hb-track" style="height:14px"><div class="hb-fill" style="width:${v}%;background:${STF[st]}"></div><i style="left:${o.objectif}%;height:20px"></i></div><span class="trs-val" style="color:${ST[st]}">${v} %</span></div>` +
+      `<div class="trs-sub">Disponibilité ${l.d} % · Performance ${l.p} % · Qualité ${l.q} %</div>`;
+  }).join("") + `<div class="card-foot">TRS = disponibilité × performance × qualité. Repère noir = objectif ${o.objectif} %.${o.note ? " " + esc(o.note) : ""}</div>`;
+}
+
+const RENDU = { barres, anneau, barresH, tableau, trs };
+
+/* --- Indicateurs --- */
+function kpis() {
+  $("kpis").innerHTML = KPI_DATA.map(k => {
+    const st = k.statut, col = st ? ST[st] : null;
+    const ev = k.evol == null ? "" : `<span class="${k.evol < 0 ? "down" : "up"}">${pctFmt(k.evol)}</span> `;
+    const g = k.jauge ? `<div class="gauge"><div style="width:${(k.jauge.valeur / k.jauge.max) * 100}%;background:${STF[st] || COUL.N}"></div><i style="left:${(k.jauge.objectif / k.jauge.max) * 100}%"></i></div>` : "";
+    return `<div class="kpi${st ? " st" : ""}" ${st ? `style="--c:${STF[st]}"` : ""}><div class="kpi-label">${esc(k.label)}</div><div class="kpi-value" ${col ? `style="color:${col}"` : ""}>${esc(k.valeur)}</div>${g}<div class="kpi-detail">${ev}${esc(k.detail || "")}</div></div>`;
+  }).join("");
+}
+
+/* --- Rendu de l'état --- */
+$("periode").textContent = PERIODE;
+kpis();
+Object.keys(PANNEAUX).forEach(id => {
+  const p = PANNEAUX[id];
+  $(id + "-t").textContent = p.titre;
+  $(id + "-s").textContent = p.sousTitre || "";
+  if (p.badge) { $(id + "-b").textContent = p.badge; $(id + "-b").style.display = ""; }
+  RENDU[p.type]($(id), p);
+});
+
+</script>
+</body>
+</html>
